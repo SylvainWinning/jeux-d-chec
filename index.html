@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr" data-color-scheme="auto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chess Starter • Débutant</title>
+    <meta name="description" content="Jeu d’échecs pour débutants – gratuit, responsive, accessible. Publiez-le facilement sur GitHub Pages." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="appbar" role="banner">
+      <div class="container">
+        <h1 class="brand">
+          <span class="brand__logo" aria-hidden="true">♟</span>
+          <span class="brand__text">Chess Starter</span>
+        </h1>
+        <nav aria-label="Actions">
+          <button id="newGameBtn" class="btn primary" title="Nouvelle partie">Nouvelle</button>
+          <button id="undoBtn" class="btn" title="Annuler le dernier coup">Annuler</button>
+          <button id="redoBtn" class="btn" title="Rétablir">Rétablir</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container main">
+      <section class="card board-card">
+        <div class="board-header">
+          <div class="status" id="status" aria-live="polite">Au tour des Blancs</div>
+          <div class="toggles">
+            <label class="switch">
+              <input type="checkbox" id="vsCpuToggle" />
+              <span>VS Ordinateur</span>
+            </label>
+            <label class="select">
+              <span>Jouer :</span>
+              <select id="sideSelect" aria-label="Choisir sa couleur">
+                <option value="w">Blanc</option>
+                <option value="b">Noir</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="board-wrap">
+          <div id="board" class="board" role="grid" aria-label="Plateau d’échecs 8 par 8">
+            <!-- cases générées par JS -->
+          </div>
+          <div class="legend legend--files" aria-hidden="true">
+            <span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span>
+          </div>
+          <div class="legend legend--ranks" aria-hidden="true">
+            <span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span>
+          </div>
+        </div>
+
+        <div class="helpers">
+          <label class="switch">
+            <input type="checkbox" id="hintToggle" checked />
+            <span>Voir les coups légaux</span>
+          </label>
+          <label class="switch">
+            <input type="checkbox" id="flipToggle" />
+            <span>Tourner le plateau</span>
+          </label>
+        </div>
+      </section>
+
+      <aside class="card side-card">
+        <h2 class="card-title">Historique</h2>
+        <ol id="movesList" class="moves" aria-live="polite"></ol>
+
+        <h2 class="card-title">Options</h2>
+        <div class="options">
+          <button id="exportBtn" class="btn">Exporter PGN</button>
+          <button id="copyLinkBtn" class="btn">Lien de partage</button>
+        </div>
+
+        <details class="tips">
+          <summary>Conseils pour débuter</summary>
+          <ul>
+            <li>Contrôlez le centre (cases e4, d4, e5, d5).</li>
+            <li>Développez vos cavaliers et fous tôt.</li>
+            <li>Roquez pour protéger votre roi.</li>
+            <li>Évitez de bouger plusieurs fois la même pièce au début.</li>
+          </ul>
+        </details>
+      </aside>
+    </main>
+
+    <div id="announce" class="sr-only" aria-live="assertive"></div>
+
+    <footer class="footer">
+      <div class="container">
+        <p>Fait pour l’apprentissage. <a href="https://github.com/" target="_blank" rel="noreferrer noopener">Publiez-le sur GitHub Pages</a>.</p>
+      </div>
+    </footer>
+
+    <script src="./script.js" type="module"></script>
+  </body>
+</html>
