@@ -16,35 +16,78 @@
   --dur-slow: .45s;
   --ease: cubic-bezier(.2,.8,.2,1);
 
-  /* Palette OKLCH (avec fallback) */
-  --bg: oklch(98% 0.01 95);
-  --surface: oklch(97% 0.02 95);
-  --muted: oklch(92% 0.03 95);
-  --text: oklch(24% 0.03 95);
-  --text-muted: oklch(40% 0.02 95);
-  --accent: oklch(69% 0.13 254);
-  --accent-2: oklch(74% 0.1 230);
-  --danger: oklch(65% 0.2 25);
-  --ok: oklch(72% 0.13 155);
-  --board-light: oklch(92% 0.08 95);
-  --board-dark: oklch(64% 0.07 95);
-  --hint: oklch(85% 0.17 200 / .9);
+  /* Neutral palette (no brown) — Fallback for all browsers */
+  --bg: #f6f8fb;
+  --surface: #ffffff;
+  --muted: #eef2f7;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --accent: #6b5cff;
+  --accent-2: #8b82ff;
+  --danger: #ef4444;
+  --ok: #22c55e;
 
-  /* Fallbacks (dans les navigateurs sans OKLCH) */
-  color-scheme: light dark;
+  /* Board + pieces */
+  --board-light: #e6edf6;  /* visible on light + dark */
+  --board-dark: #b2c0d1;
+  --board-grid: rgba(0,0,0,.08);
+  --piece-white: #111827; /* dark gray on light board */
+  --piece-black: #0b1020; /* even darker for contrast */
+  --pawn-player: #ff6bb5; /* pink */
+  --pawn-opp: #ffffff;    /* white */
 }
 
 @media (prefers-color-scheme: dark){
   :root{
-    --bg: oklch(16% 0.02 95);
-    --surface: oklch(22% 0.02 95);
-    --muted: oklch(26% 0.02 95);
-    --text: oklch(94% 0.02 95);
-    --text-muted: oklch(73% 0.02 95);
-    --board-light: oklch(35% 0.03 95);
-    --board-dark: oklch(22% 0.02 95);
-    --hint: oklch(70% 0.12 200 / .9);
-    --shadow-md: 0 10px 28px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.3);
+    --bg: #0b1220;
+    --surface: #121a27;
+    --muted: #0e1623;
+    --text: #e6edf6;
+    --text-muted: #9aa4b2;
+
+    --board-light: #2f3a4a;
+    --board-dark: #1d2734;
+    --board-grid: rgba(255,255,255,.08);
+    --piece-white: #ffffff;
+    --piece-black: #d7dce4;
+    --pawn-player: #ff77c1;
+    --pawn-opp: #ffffff;
+  }
+}
+
+/* If OKLCH is supported, upgrade to a richer palette (still neutral, no brown) */
+@supports (color: oklch(60% 0.1 200)){
+  :root{
+    --bg: oklch(98% 0.02 230);
+    --surface: oklch(97% 0.02 230);
+    --muted: oklch(94% 0.02 230);
+    --text: oklch(27% 0.02 230);
+    --text-muted: oklch(45% 0.02 230);
+    --accent: oklch(69% 0.13 254);
+    --accent-2: oklch(74% 0.1 230);
+    --board-light: oklch(90% 0.05 230);
+    --board-dark: oklch(65% 0.05 230);
+    --board-grid: oklch(45% 0.02 230 / .12);
+    --piece-white: oklch(20% 0.02 230);
+    --piece-black: oklch(15% 0.02 230);
+    --pawn-player: oklch(75% 0.21 348);
+    --pawn-opp: oklch(98% 0 95);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg: oklch(18% 0.03 230);
+      --surface: oklch(22% 0.03 230);
+      --muted: oklch(16% 0.03 230);
+      --text: oklch(94% 0.02 230);
+      --text-muted: oklch(73% 0.02 230);
+      --board-light: oklch(36% 0.03 230);
+      --board-dark: oklch(24% 0.03 230);
+      --board-grid: oklch(85% 0.02 230 / .10);
+      --piece-white: oklch(98% 0 95);
+      --piece-black: oklch(88% 0.02 230);
+      --pawn-player: oklch(72% 0.24 348);
+      --pawn-opp: oklch(98% 0 95);
+    }
   }
 }
 
@@ -69,6 +112,14 @@ body{
   backdrop-filter: saturate(1.1) blur(8px);
   background: color-mix(in oklch, var(--surface), transparent 30%);
   border-bottom: 1px solid color-mix(in oklch, var(--surface), black 10%);
+}
+@supports not (color: oklch(60% 0.1 200)){
+  .appbar{ background: rgba(255,255,255,.55); }
+}
+@media (prefers-color-scheme: dark){
+  @supports not (color: oklch(60% 0.1 200)){
+    .appbar{ background: rgba(18,26,39,.55); }
+  }
 }
 .appbar .container{
   display: flex; align-items: center; justify-content: space-between;
@@ -101,6 +152,9 @@ nav .btn + .btn{ margin-left: var(--space-2); }
   border: 1px solid color-mix(in oklch, var(--surface), black 8%);
   padding: var(--space-4);
 }
+@supports not (color: oklch(60% 0.1 200)){
+  .card{ background: linear-gradient(180deg, var(--surface), color-mix(in srgb, var(--surface), #000 6%)); }
+}
 
 .board-card{ position: relative; }
 .board-header{
@@ -121,29 +175,38 @@ nav .btn + .btn{ margin-left: var(--space-2); }
   overflow: clip;
   border: 1px solid color-mix(in oklch, var(--surface), black 10%);
   box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--surface), black 8%);
+  background: var(--board-dark);
 }
+@supports not (color: oklch(60% 0.1 200)){
+  .board{ background: var(--board-dark); }
+}
+
 .square{
   position: relative;
   display: grid; place-items:center;
   font-size: clamp(1.8rem, 6vw, 2.6rem);
   user-select: none;
   transition: transform var(--dur-fast) var(--ease);
+  box-shadow: inset 0 0 0 1px var(--board-grid);
 }
-.square[data-file="a"][data-rank="1"]::after,
-.square[data-file="a"][data-rank="1"]::before{ content:""; }
 .square.light{ background: var(--board-light); }
 .square.dark{ background: var(--board-dark); }
 
 .square:focus-visible{ outline: 2px solid var(--accent); outline-offset: -2px; }
 .square:hover{ transform: translateZ(0) scale(1.02); }
 
-.piece{ transition: transform var(--dur) var(--ease); }
+.piece{ transition: transform var(--dur) var(--ease); filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+.piece--w{ color: var(--piece-white); }
+.piece--b{ color: var(--piece-black); }
+.piece.pawn--player{ color: var(--pawn-player) !important; }
+.piece.pawn--opp{ color: var(--pawn-opp) !important; }
+
 .square.selected{ box-shadow: inset 0 0 0 2px var(--accent); }
 .square.lastmove{ box-shadow: inset 0 0 0 2px color-mix(in oklch, var(--accent), white 40%); }
 .square .dot{
   position: absolute; width: 16px; height:16px; border-radius:999px;
-  background: var(--hint);
-  box-shadow: 0 0 0 2px color-mix(in oklch, var(--hint), black 15%);
+  background: color-mix(in oklch, var(--accent), white 30%);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--accent), black 15%);
 }
 
 .legend{
@@ -153,8 +216,6 @@ nav .btn + .btn{ margin-left: var(--space-2); }
   color: var(--text-muted);
   font-size: .9rem;
 }
-.legend--ranks{ grid-template-columns: 1fr; grid-template-rows: repeat(8, 1fr); position:absolute; inset:0 auto 0 0; display:none;}
-@media(min-width: 920px){ .legend--ranks{ display:none; } } /* we keep files only for cleanliness */
 
 .helpers{
   display:flex; gap: var(--space-3); align-items:center; justify-content:center; margin-top: var(--space-3);

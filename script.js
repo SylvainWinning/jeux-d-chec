@@ -1,12 +1,7 @@
-/* Chess Starter — jeu d’échecs simple pour débutants
- * - Humain vs humain ou vs Ordinateur (facile)
- * - Coups légaux, échecs, échec et mat, pat
- * - Roque, prise en passant, promotion (auto-dame par défaut)
- * - Historique des coups, export PGN, annuler/rétablir
- * - Sauvegarde locale (localStorage), UI accessible + responsive
- *
- * Auteur: Vous (avec un petit coup de pouce de l’IA)
- * Licence: MIT
+/* Chess Starter — jeu d’échecs simple pour débutants (v2 neutral theme)
+ * - Corrige l’affichage du plateau et des pièces (fallbacks sans OKLCH)
+ * - Pions du joueur en ROSE, pions de l’adversaire en BLANC (quel que soit le camp choisi)
+ * - Reste : règles, roque, en passant, promotion, annuler/rétablir, PGN, IA simple
  */
 
 const FILES = ['a','b','c','d','e','f','g','h'];
@@ -28,7 +23,7 @@ let future = [];     // stack for redo
 let orientation = 'w'; // 'w' bottom; can be flipped
 let showHints = true;
 let vsCpu = false;
-let playerSide = 'w';
+let playerSide = 'w'; // utilisé pour colorer les pions (rose joueur, blanc adversaire)
 
 const boardEl = document.getElementById('board');
 const statusEl = document.getElementById('status');
@@ -95,7 +90,6 @@ function fenToState(fen){
 }
 
 function stateToFen(s){
-  // For completeness (not needed for game) – could be used in share link.
   let out = '';
   for(let r=0;r<8;r++){
     let empty=0;
@@ -142,7 +136,12 @@ function renderBoard(){
     const piece = state.board[sqIndex];
     if(piece){
       const span = document.createElement('span');
-      span.className = 'piece';
+      span.className = 'piece ' + (piece[0]==='w' ? 'piece--w' : 'piece--b') + ' piece-' + typeOf(piece);
+      if(typeOf(piece)==='P'){
+        // Coloration spéciale : pions du joueur = rose, de l'adversaire = blanc
+        if(colorOf(piece)===playerSide) span.classList.add('pawn--player');
+        else span.classList.add('pawn--opp');
+      }
       span.textContent = PIECE_UNICODE[piece];
       span.setAttribute('aria-label', pieceToName(piece));
       cell.appendChild(span);
@@ -166,7 +165,6 @@ function pieceToName(p){
 }
 
 function drawHints(){
-  // remove dots
   for(const el of boardEl.querySelectorAll('.dot')) el.remove();
   for(const el of boardEl.querySelectorAll('.selected')) el.classList.remove('selected');
 
@@ -209,7 +207,6 @@ function onSquareClick(e){
   const myColor = state.turn;
 
   if(state.selected==null){
-    // Select a piece (must be current player's)
     if(piece && colorOf(piece)===myColor){
       state.selected = sq;
       drawHints();
@@ -217,14 +214,12 @@ function onSquareClick(e){
     return;
   }
 
-  // If clicked same color piece, switch selection
   if(piece && colorOf(piece)===myColor){
     state.selected = sq;
     drawHints();
     return;
   }
 
-  // Attempt a move
   const legal = legalMovesFor(state.selected, myColor);
   const chosen = legal.find(m => m.to===sq);
   if(!chosen){
@@ -247,23 +242,21 @@ function maybeCpuMoves(){
       const m = chooseCpuMove(sideToPlay);
       if(m){
         playMove(m);
-        maybeCpuMoves(); // if player picked black at start and CPU is white, this handles the first move
+        maybeCpuMoves();
       }
     }, 200);
   }
 }
 
 function playMove(move){
-  // push current state for undo
   history.push(clone(state));
-  future = []; // clear redo stack
+  future = [];
 
   applyMove(state, move);
   state.lastMove = { from: move.from, to: move.to };
   state.turn = state.turn==='w' ? 'b' : 'w';
   if(state.turn==='w') state.full += 1;
 
-  // Update PGN-like log (very simplified SAN)
   appendMoveToLog(move);
 
   saveLocal();
@@ -278,7 +271,6 @@ function appendMoveToLog(move){
 
 function renderMovesList(){
   movesListEl.innerHTML = '';
-  // group by pairs (White, Black)
   for(let i=0;i<state.pgn.length;i+=2){
     const li = document.createElement('li');
     const w = state.pgn[i] || '';
@@ -308,21 +300,16 @@ function legalMovesFor(from, color){
   const piece = state.board[from];
   if(!piece || colorOf(piece)!==color) return [];
   const pseudo = pseudoMovesFor(from, piece);
-  // filter out moves that leave king in check
   const legal = [];
   for(const m of pseudo){
     const snapshot = clone(state);
     applyMove(state, m);
     const ok = !inCheck(color);
-    // revert
     state = snapshot;
-    legal.pushIf(ok, m);
+    if(ok) legal.push(m);
   }
   return legal;
 }
-
-// Helper to push conditional
-Array.prototype.pushIf = function(cond, item){ if(cond) this.push(item); };
 
 function pseudoMovesFor(from, piece){
   const color = colorOf(piece);
@@ -335,24 +322,20 @@ function pseudoMovesFor(from, piece){
   const promoRow = color==='w' ? 0 : 7;
 
   if(type==='P'){
-    // forward 1
     const r1 = r + forward;
     if(inside(r1,c) && !board[idx(r1,c)]){
-      // promotion?
       if(r1===promoRow){
         out.push({from, to: idx(r1,c), promote:'Q'});
       }else{
         out.push({from, to: idx(r1,c)});
-        // forward 2 from start
         if(r===startRow){
           const r2 = r + 2*forward;
           if(inside(r2,c) && !board[idx(r2,c)]){
-            out.push({from, to: idx(r2,c), epSet: idx(r1,c)}); // set ep square behind pawn
+            out.push({from, to: idx(r2,c), epSet: idx(r1,c)});
           }
         }
       }
     }
-    // captures
     for(const dc of [-1, +1]){
       const cc = c + dc;
       const rr = r + forward;
@@ -362,7 +345,6 @@ function pseudoMovesFor(from, piece){
         if(rr===promoRow) out.push({from, to: idx(rr,cc), capture:true, promote:'Q'});
         else out.push({from, to: idx(rr,cc), capture:true});
       }
-      // en passant capture
       if(state.ep != null && idx(rr,cc) === state.ep){
         out.push({from, to: idx(rr,cc), enpassant:true, capture:true});
       }
@@ -397,7 +379,6 @@ function pseudoMovesFor(from, piece){
     }
   }
   else if(type==='K'){
-    // one-step moves
     for(const dr of [-1,0,1]) for(const dc of [-1,0,1]){
       if(dr===0 && dc===0) continue;
       const rr=r+dr, cc=c+dc;
@@ -407,31 +388,25 @@ function pseudoMovesFor(from, piece){
         out.push({from, to: idx(rr,cc), capture: !!t});
       }
     }
-    // castling
     const rights = state.castling;
-    // we must ensure squares are empty and not attacked
     const inCheckNow = inCheck(color);
     if(!inCheckNow){
       if(color==='w' && rights.wK){
-        // squares f1 (61) and g1 (62) empty; and not attacked
         if(!board[61] && !board[62] && !attacked(61,'b') && !attacked(62,'b')){
           out.push({from, to: 62, castle:'K'});
         }
       }
       if(color==='w' && rights.wQ){
-        // squares b1,c1,d1 (57,58,59) empty; c1 and d1 not attacked
         if(!board[57] && !board[58] && !board[59] && !attacked(59,'b') && !attacked(58,'b')){
           out.push({from, to: 58, castle:'Q'});
         }
       }
       if(color==='b' && rights.bK){
-        // squares f8(5), g8(6)
         if(!board[5] && !board[6] && !attacked(5,'w') && !attacked(6,'w')){
           out.push({from, to: 6, castle:'K'});
         }
       }
       if(color==='b' && rights.bQ){
-        // squares b8(1), c8(2), d8(3)
         if(!board[1] && !board[2] && !board[3] && !attacked(3,'w') && !attacked(2,'w')){
           out.push({from, to: 2, castle:'Q'});
         }
@@ -442,11 +417,9 @@ function pseudoMovesFor(from, piece){
 }
 
 function attacked(square, byColor){
-  // Is square attacked by side byColor
   const [r,c] = rcOf(square);
   const b = state.board;
 
-  // Pawns
   const dir = byColor==='w' ? -1 : +1;
   for(const dc of [-1,+1]){
     const rr=r+dir, cc=c+dc;
@@ -456,7 +429,6 @@ function attacked(square, byColor){
     }
   }
 
-  // Knights
   const jumps = [[-2,-1],[-2,+1],[-1,-2],[-1,+2],[+1,-2],[+1,+2],[+2,-1],[+2,+1]];
   for(const [dr,dc] of jumps){
     const rr=r+dr, cc=c+dc;
@@ -465,7 +437,6 @@ function attacked(square, byColor){
     if(p === byColor+'N') return true;
   }
 
-  // Bishops/Queens diagonals
   for(const [dr,dc] of [[-1,-1],[-1,+1],[+1,-1],[+1,+1]]){
     let rr=r+dr, cc=c+dc;
     while(inside(rr,cc)){
@@ -478,7 +449,6 @@ function attacked(square, byColor){
     }
   }
 
-  // Rooks/Queens orthogonals
   for(const [dr,dc] of [[-1,0],[+1,0],[0,-1],[0,+1]]){
     let rr=r+dr, cc=c+dc;
     while(inside(rr,cc)){
@@ -491,7 +461,6 @@ function attacked(square, byColor){
     }
   }
 
-  // King
   for(const dr of [-1,0,1]) for(const dc of [-1,0,1]){
     if(dr===0 && dc===0) continue;
     const rr=r+dr, cc=c+dc;
@@ -514,20 +483,15 @@ function inCheck(color){
   return attacked(k, color==='w' ? 'b' : 'w');
 }
 
-// Apply move (mutates state). Returns nothing; to undo, use cloned snapshot outside.
 function applyMove(s, m){
   const board = s.board;
   const piece = board[m.from];
   const color = colorOf(piece);
   const type = typeOf(piece);
 
-  // update halfmove clock
   if(type==='P' || m.capture) s.half = 0; else s.half += 1;
-
-  // clear en passant by default
   s.ep = null;
 
-  // handle en passant capture
   if(m.enpassant){
     const [rto,cto] = rcOf(m.to);
     const capR = rto + (color==='w'?+1:-1);
@@ -535,28 +499,16 @@ function applyMove(s, m){
     board[capIdx] = null;
   }
 
-  // handle castling (move rook)
   if(m.castle){
-    if(color==='w' && m.castle==='K'){ // e1g1, rook h1f1
-      board[63] = null;
-      board[61] = 'wR';
-    }else if(color==='w' && m.castle==='Q'){ // e1c1, rook a1d1
-      board[56] = null;
-      board[59] = 'wR';
-    }else if(color==='b' && m.castle==='K'){ // e8g8, rook h8f8
-      board[7] = null;
-      board[5] = 'bR';
-    }else if(color==='b' && m.castle==='Q'){ // e8c8, rook a8d8
-      board[0] = null;
-      board[3] = 'bR';
-    }
+    if(color==='w' && m.castle==='K'){ board[63] = null; board[61] = 'wR'; }
+    else if(color==='w' && m.castle==='Q'){ board[56] = null; board[59] = 'wR'; }
+    else if(color==='b' && m.castle==='K'){ board[7] = null; board[5] = 'bR'; }
+    else if(color==='b' && m.castle==='Q'){ board[0] = null; board[3] = 'bR'; }
   }
 
-  // move piece
   board[m.to] = piece;
   board[m.from] = null;
 
-  // promotion (auto-queen unless set)
   if(type==='P'){
     const [rto] = rcOf(m.to);
     if(rto===0 || rto===7){
@@ -565,22 +517,18 @@ function applyMove(s, m){
     }
   }
 
-  // set en passant square if pawn moved two squares
   if(type==='P' && Math.abs(rcOf(m.to)[0] - rcOf(m.from)[0])===2){
     const [rfrom,cfrom] = rcOf(m.from);
     const stepR = (color==='w' ? -1 : 1);
     s.ep = idx(rfrom + stepR, cfrom);
   }
 
-  // update castling rights if king or rooks move/captured
   if(piece === 'wK'){ s.castling.wK=false; s.castling.wQ=false; }
   if(piece === 'bK'){ s.castling.bK=false; s.castling.bQ=false; }
-  // rook moves
   if(m.from===56) s.castling.wQ=false;
   if(m.from===63) s.castling.wK=false;
   if(m.from===0) s.castling.bQ=false;
   if(m.from===7) s.castling.bK=false;
-  // rook captured
   if(m.to===56) s.castling.wQ=false;
   if(m.to===63) s.castling.wK=false;
   if(m.to===0) s.castling.bQ=false;
@@ -588,15 +536,13 @@ function applyMove(s, m){
 }
 
 function moveToSAN(move, prevState, nextState){
-  // simple SAN-like: piece letter, 'x' for capture, target square, '+/#'
   const piece = prevState.board[move.from];
   const type = typeOf(piece);
   let san = '';
   if(type !== 'P') san += type;
   if(move.capture) san += 'x';
   san += algebraic(move.to);
-  // check/mate markers
-  const sideAfter = nextState.turn; // after move, it's opponent's turn
+  const sideAfter = nextState.turn;
   const legal = allLegalMoves(sideAfter);
   const inChk = inCheck(sideAfter);
   if(legal.length===0){
@@ -604,7 +550,6 @@ function moveToSAN(move, prevState, nextState){
   }else if(inChk){
     san += '+';
   }
-  // castling notation
   if(move.castle==='K') san = 'O-O';
   if(move.castle==='Q') san = 'O-O-O';
   if(type==='P' && (rcOf(move.to)[0]===0 || rcOf(move.to)[0]===7) && move.promote){
@@ -621,19 +566,17 @@ function evaluate(color){
     const val = VALUES[typeOf(p)];
     score += (colorOf(p)==='w') ? val : -val;
   }
-  return score; // >0 means white advantage
+  return score;
 }
 
 function chooseCpuMove(color){
   const moves = allLegalMoves(color);
   if(moves.length===0) return null;
-  // one-ply greedy
   let best = []; let bestScore = (color==='w' ? -Infinity : +Infinity);
   for(const m of moves){
     const snap = clone(state);
     applyMove(state, m);
-    const score = evaluate('w'); // evaluate from white perspective
-    // revert
+    const score = evaluate('w');
     state = snap;
     const better = color==='w' ? (score>bestScore) : (score<bestScore);
     if(better){ bestScore=score; best=[m]; }
@@ -657,7 +600,6 @@ function loadLocal(){
     showHints = !!obj.showHints;
     vsCpu = !!obj.vsCpu;
     playerSide = obj.playerSide||'w';
-    // sync UI toggles
     hintToggle.checked = showHints;
     flipToggle.checked = orientation==='b';
     vsCpuToggle.checked = vsCpu;
@@ -672,15 +614,12 @@ newGameBtn.addEventListener('click', ()=>{
   state.pgn = [];
   state.lastMove = null;
   state.turn = 'w';
+  renderBoard();
   if(vsCpu && playerSide==='b'){
-    // CPU plays white first
-    renderBoard();
     setTimeout(()=>{
       const m = chooseCpuMove('w');
       if(m) playMove(m);
     }, 200);
-  }else{
-    renderBoard();
   }
   saveLocal();
 });
@@ -721,17 +660,17 @@ flipToggle.addEventListener('change', (e)=>{ orientation = e.target.checked ? 'b
 vsCpuToggle.addEventListener('change', (e)=>{
   vsCpu = e.target.checked;
   saveLocal();
+  renderBoard();
   maybeCpuMoves();
 });
 sideSelect.addEventListener('change', (e)=>{
   playerSide = e.target.value;
   saveLocal();
+  renderBoard(); // recolorer les pions selon le nouveau camp choisi
   maybeCpuMoves();
 });
 
-// --------- Init
 window.addEventListener('hashchange', ()=>{
-  // support sharing a FEN via #fen=
   const m = location.hash.match(/fen=([^&]+)/);
   if(m){
     try{
@@ -749,5 +688,4 @@ function boot(){
   renderBoard();
   maybeCpuMoves();
 }
-
 boot();
